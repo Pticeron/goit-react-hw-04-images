@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 
-import { getSearch } from '../services/getSearch';
+import { fetchImages } from '../services/fetchImages';
 
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
@@ -9,86 +9,80 @@ import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
 
-export class App extends Component {
-  state = {
-    images: [],
-    search: '',
-    page: 1,
-    loading: false,
+export const App = () => {
+  const [inputValue, setInputValue] = useState('');
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastPage, setLastPage] = useState(0);
+  const [error, setError] = useState(null);
+  const [modal, setModal] = useState({
     showModal: false,
-    largeImage: '',
-    empty: false,
-    total: 1,
-    error: null,
+    largeImageURL: '',
+  });
+  const [noResults, setNoResults] = useState(false);
+
+  const handleChange = event => {
+    setInputValue(event.target.value);
   };
 
-  componentDidUpdate(_, PrevState) {
-    if (
-      PrevState.search !== this.state.search ||
-      PrevState.page !== this.state.page
-    ) {
-      this.getFunc(this.state.search, this.state.page);
-    }
-  }
-
-  getFunc = (text, page) => {
-    this.setState({ loading: true });
-
-    getSearch(text, page)
-      .then(response => response.json())
-      .then(data => {
-        if (data.hits.length === 0) {
-          this.setState({ empty: true });
-        }
-        this.setState(prevSt => ({
-          page: prevSt.page,
-          images: [...prevSt.images, ...data.hits],
-          total: data.total,
-        }));
-      })
-      .catch(error => {
-        this.setState({ error: error.message });
-      })
-      .finally(() => {
-        this.setState({ loading: false });
-      });
+  const onClickClear = () => {
+    setInputValue('');
   };
 
-  clickLoad = () => {
-    this.setState(prevSt => ({
-      page: prevSt.page + 1,
-    }));
-  };
+  const handleSubmit = event => {
+    event.preventDefault(); // зупиняємо перезавантаження сторінки
 
-  openModal = (largeImageURL, alt) => {
-    this.setState(({ showModal }) => {
-      return { showModal: !showModal, largeImageURL, alt };
-    });
-  };
-
-  handleSubmit = search => {
-    if (this.state.search === search){
+    if (inputValue === '') {
+      alert('Please enter your query'); // сповіщення про пустий запит
       return;
     }
-    this.setState({
-      search,
-      images: [],
-      page: 1,
-      total: 1,
-      loading: false,
-      error: null,
-      empty: false,
-    });
+
+    if (query === inputValue) return; // якщо запит не змінився, то нічого не робимо
+    setImages([]);
+    setQuery(inputValue);
+    setPage(1);
   };
 
-  closeModal = () => {
-    this.setState(({ showModal }) => {
-      return { showModal: !showModal };
-    });
+  const handleLoadMore = () => { // функція для кнопки "Load more"
+    setPage(prevState => prevState + 1);
   };
 
-  render() {
-    const { error, loading, images, total, page } = this.state;
+  const toggleModal = () => {
+    setModal(prevState => ({ ...prevState, showModal: !prevState.showModal })); // змінюємо значення showModal на протилежне
+  };
+
+  // функція для відкриття модального вікна
+  const handleImageClick = largeImageURL => {
+    setModal(prevState => ({ ...prevState, largeImageURL }));
+    toggleModal();
+  };
+
+  useEffect(() => {
+    if (page === 0) return;
+
+    const fetchImagesByQuery = async searchQuery => {
+      setIsLoading(true); // показуємо лоадер
+      setError(null); // очищаємо помилку
+      setNoResults(false); // очищаємо сповіщення про відсутність результатів
+
+      try {
+        const response = await fetchImages(searchQuery, page);
+        setImages(prevState => [...prevState, ...response.hits]);
+        setLastPage(Math.ceil(response.totalHits / 12));
+        response.totalHits === 0 && setNoResults(true); // якщо результатів немає, то відображаємо сповіщення
+
+      } catch (error) {
+        setError(error);
+      } finally {
+        setIsLoading(false); // прибираємо лоадер
+      }
+    };
+
+    fetchImagesByQuery(query);
+  }, [page, query]);
+
     return (
       <div>
         <Toaster
@@ -97,7 +91,12 @@ export class App extends Component {
           }}
         />
 
-        <Searchbar handleSubmit={this.handleSubmit} />
+        <Searchbar
+        onSubmit={handleSubmit}
+        onChange={handleChange}
+        onClickClear={onClickClear}
+        inputValue={inputValue} 
+        />
 
         {error && (
           <h2 style={{ textAlign: 'center' }}>
@@ -105,25 +104,25 @@ export class App extends Component {
           </h2>
         )}
 
-        <ImageGallery togleModal={this.openModal} images={images} />
+        <ImageGallery images={images} onImageClick={handleImageClick} />
 
-        {loading && <Loader />}
-        {this.state.empty && (
+        {isLoading && <Loader />}
+        {noResults && (
           <h2 style={{ textAlign: 'center' }}>
             Sorry. There are no images ... 😭
           </h2>
         )}
 
-        {total / 12 > page && <Button clickLoad={this.clickLoad} />}
+        {page < lastPage && !isLoading ? (
+        <Button label="Load more" handleLoadMore={handleLoadMore} />
+      ) : (
+        <div style={{ height: 40 }}></div>
+      )}
 
-        {this.state.showModal && (
-          <Modal closeModal={this.closeModal}>
-            <img src={this.state.largeImageURL} alt={this.state.alt} />
-          </Modal>
-        )}
-      </div>
+      {/* якщо showModal === true, то відображаємо модальне вікно */}
+      {modal.showModal && <Modal onClose={toggleModal} largeImageURL={modal.largeImageURL} />}
+    </div>
     );
   }
-}
 
 

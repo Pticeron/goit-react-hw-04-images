@@ -1,15 +1,16 @@
 import propTypes from 'prop-types';
 import css from './Buttun.module.css';
 
-export const Button = ({ clickLoad }) => {
+export const Button = ({ label, handleLoadMore }) => {
   return (
-    <button onClick={clickLoad} className={css.Button} type="button">
-      Load more
+    <button onClick={handleLoadMore} className={css.Button} type="button">
+      {label}
     </button>
   );
 };
 
 
 Button.propTypes = {
-  clickLoad: propTypes.func,
+  handleLoadMore: propTypes.func,
+  label: propTypes.string,
 };
