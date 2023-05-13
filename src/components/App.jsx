@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-
 import { fetchImages } from '../services/fetchImages';
 
 import { Searchbar } from './Searchbar/Searchbar';
@@ -32,9 +31,9 @@ export const App = () => {
   };
 
   const handleSubmit = event => {
-    event.preventDefault(); // зупиняємо перезавантаження сторінки
+    event.preventDefault();
 
-    if (inputValue === '') {
+      if (inputValue === '') {
       alert('Please enter your query'); // сповіщення про пустий запит
       return;
     }

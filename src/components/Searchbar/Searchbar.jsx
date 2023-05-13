@@ -1,14 +1,13 @@
-import { BiSearch } from 'react-icons/bi';
 import propTypes from 'prop-types';
 import css from './Searchbar.module.css';
-import { ButtonClear } from './'
+import { ButtonClear } from '../ButtonClear/ButtonClear';
 
 export const Searchbar = ({ onSubmit, onChange, onClickClear, inputValue }) => (
-  <header className={css.searchbar}>
-    <form className={css.Form} onSubmit={onSubmit}>
-    <button type="submit" className={css.Button}>
-            <BiSearch size="20" />
-          </button>
+  <header className={css.searchBar}>
+    <form className={css.searchForm} onSubmit={onSubmit}>
+      <button type="submit" className={css.searchFormButton}>
+        <span className={css.searchFormButtonLabel}>Search</span>
+      </button>
       <input
         className={css.searchFormInput}
         type="text"
@@ -22,7 +21,11 @@ export const Searchbar = ({ onSubmit, onChange, onClickClear, inputValue }) => (
       {inputValue && <ButtonClear onClickClear={onClickClear} />}
     </form>
   </header>
-); 
+);
 
-
-Searchbar.propTypes = { onSubmit: propTypes.func };
+Searchbar.propTypes = {
+  onSubmit: propTypes.func,
+  onChange: propTypes.func,
+  onClickClear: propTypes.func,
+  query: propTypes.string,
+};
