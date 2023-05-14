@@ -10,5 +10,5 @@ export const ButtonClear = ({ onClickClear }) => (
 );
 
 ButtonClear.propTypes = {
-  onClickClear: propTypes.func,
+  onClickClear: propTypes.func.isRequired,
 };

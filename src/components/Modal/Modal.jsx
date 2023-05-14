@@ -40,8 +40,8 @@ return () => {
 };
 
 Modal.propTypes = {
-  onClose: propTypes.func,
-  largeImageURL: propTypes.string,
+  onClose: propTypes.func.isRequired.isRequired,
+  largeImageURL: propTypes.string.isRequired,
 };
 
 

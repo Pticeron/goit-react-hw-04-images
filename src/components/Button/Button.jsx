@@ -11,6 +11,6 @@ export const Button = ({ label, handleLoadMore }) => {
 
 
 Button.propTypes = {
-  handleLoadMore: propTypes.func,
-  label: propTypes.string,
+  handleLoadMore: propTypes.func.isRequired,
+  label: propTypes.string.isRequired,
 };
