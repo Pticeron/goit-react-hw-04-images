@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { fetchImages } from '../services/fetchImages';
 
 import { Searchbar } from './Searchbar/Searchbar';
@@ -33,26 +34,24 @@ export const App = () => {
   const handleSubmit = event => {
     event.preventDefault();
 
-      if (inputValue === '') {
-      alert('Please enter your query'); // сповіщення про пустий запит
-      return;
+    if (inputValue.trim() === '') {
+      return toast.error('Enter text for search.');
     }
 
-    if (query === inputValue) return; // якщо запит не змінився, то нічого не робимо
+    if (query === inputValue) return;
     setImages([]);
     setQuery(inputValue);
     setPage(1);
   };
 
-  const handleLoadMore = () => { // функція для кнопки "Load more"
+  const handleLoadMore = () => {
     setPage(prevState => prevState + 1);
   };
 
   const toggleModal = () => {
-    setModal(prevState => ({ ...prevState, showModal: !prevState.showModal })); // змінюємо значення showModal на протилежне
+    setModal(prevState => ({ ...prevState, showModal: !prevState.showModal }));
   };
 
-  // функція для відкриття модального вікна
   const handleImageClick = largeImageURL => {
     setModal(prevState => ({ ...prevState, largeImageURL }));
     toggleModal();
@@ -62,66 +61,64 @@ export const App = () => {
     if (page === 0) return;
 
     const fetchImagesByQuery = async searchQuery => {
-      setIsLoading(true); // показуємо лоадер
-      setError(null); // очищаємо помилку
-      setNoResults(false); // очищаємо сповіщення про відсутність результатів
+      setIsLoading(true);
+      setError(null);
+      setNoResults(false);
 
       try {
         const response = await fetchImages(searchQuery, page);
         setImages(prevState => [...prevState, ...response.hits]);
         setLastPage(Math.ceil(response.totalHits / 12));
-        response.totalHits === 0 && setNoResults(true); // якщо результатів немає, то відображаємо сповіщення
-
+        response.totalHits === 0 && setNoResults(true);
       } catch (error) {
         setError(error);
       } finally {
-        setIsLoading(false); // прибираємо лоадер
+        setIsLoading(false);
       }
     };
 
     fetchImagesByQuery(query);
   }, [page, query]);
 
-    return (
-      <div>
-        <Toaster
-          toastOptions={{
-            duration: 1500,
-          }}
-        />
+  return (
+    <div>
+      <Toaster
+        toastOptions={{
+          duration: 1500,
+        }}
+      />
 
-        <Searchbar
+      <Searchbar
         onSubmit={handleSubmit}
         onChange={handleChange}
         onClickClear={onClickClear}
-        inputValue={inputValue} 
-        />
+        inputValue={inputValue}
+      />
 
-        {error && (
-          <h2 style={{ textAlign: 'center' }}>
-            Something went wrong: ({error})!
-          </h2>
-        )}
+      {error && (
+        <h2 style={{ textAlign: 'center' }}>
+          Something went wrong: ({error})!
+        </h2>
+      )}
 
-        <ImageGallery images={images} onImageClick={handleImageClick} />
+      <ImageGallery images={images} onImageClick={handleImageClick} />
 
-        {isLoading && <Loader />}
-        {noResults && (
-          <h2 style={{ textAlign: 'center' }}>
-            Sorry. There are no images ... 😭
-          </h2>
-        )}
+      {isLoading && <Loader />}
+      {noResults && (
+        <h2 style={{ textAlign: 'center' }}>
+          Sorry. There are no images ... 😭
+        </h2>
+      )}
 
-        {page < lastPage && !isLoading ? (
+      {page < lastPage && !isLoading ? (
         <Button label="Load more" handleLoadMore={handleLoadMore} />
       ) : (
         <div style={{ height: 40 }}></div>
       )}
 
-      {/* якщо showModal === true, то відображаємо модальне вікно */}
-      {modal.showModal && <Modal onClose={toggleModal} largeImageURL={modal.largeImageURL} />}
+      {modal.showModal && (
+        <Modal onClose={toggleModal} largeImageURL={modal.largeImageURL} />
+      )}
     </div>
-    );
-  }
-
-
+  );
+};
