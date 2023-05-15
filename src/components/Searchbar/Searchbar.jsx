@@ -9,6 +9,7 @@ export const Searchbar =  ({ onSubmit }) => {
   const handleChange = ({ target }) => {
     setSearch(target.value);
   };
+  
   const handleSubmit = event => {
     event.preventDefault();
     if (search.trim() === '') {

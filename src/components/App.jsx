@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import css from './App.module.css';
-import { ToastContainer, toast } from 'react-toastify';
 
-import { fetchImages } from '../services/api';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+import { fetchPicturesQuery } from '../services/api';
 
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
@@ -12,8 +14,8 @@ import { Modal } from './Modal/Modal';
 
 export const App = () => {
   const [search, setSearch] = useState('');
-  const [images, setImages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pictures, setPictures] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [totalHits, setTotalHits] = useState(null);
@@ -22,33 +24,34 @@ export const App = () => {
   const [largeImage, setLargeImage] = useState(null);
 
   useEffect(() => {
-    if (!search) return;
-
-    const fetchImagesByQuery = async () => {
+    if (!search) {
+      return;
+    }
+    const fetchPictures = async () => {
       try {
-        setIsLoading(true);
-        const data = await fetchImages(search, page);
+        setLoading(true);
+        const data = await fetchPicturesQuery(search, page);
         data.hits.length === 0
           ? toast.error('Nothing found')
-          : setImages(prevPictures => [...prevPictures, ...data.hits]);
+          : setPictures(prevPictures => [...prevPictures, ...data.hits]);
         setTotalHits(data.totalHits);
       } catch (error) {
         setError(error.message);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    fetchImagesByQuery();
+    fetchPictures();
   }, [search, page]);
 
   const searchPictures = newSearch => {
     setSearch(newSearch);
-    setImages([]);
+    setPictures([]);
     setPage(1);
   };
 
-  const handleLoadMore = () => {
-    setPage(prevState => prevState + 1);
+  const loadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
   const openModal = data => {
@@ -62,18 +65,17 @@ export const App = () => {
 
   return (
     <div className={css.App}>
-      
       <Searchbar onSubmit={searchPictures} />
-      {images.length !== 0 && (
-        <ImageGallery images={images} openModal={openModal} />
+      {pictures.length !== 0 && (
+        <ImageGallery pictures={pictures} openModal={openModal} />
       )}
       {showModal && <Modal toggleModal={toggleModal} largeImage={largeImage} />}
-      {isLoading && <Loader />}
+
+      {loading && <Loader />}
       {error && <p>Something goes wrong</p>}
-      {totalHits > images.length && !isLoading && (
-        <Button onClick={handleLoadMore} />
-      )}
+      {totalHits > pictures.length && !loading && <Button onClick={loadMore} />}
       <ToastContainer autoClose={1500} />
     </div>
   );
 };
+
