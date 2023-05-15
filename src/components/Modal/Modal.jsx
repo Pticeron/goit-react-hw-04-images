@@ -5,44 +5,40 @@ import { createPortal } from 'react-dom';
 
 const modalRoot = document.querySelector('#modal-root');
 
-
-export const Modal = ({ onClose, largeImageURL }) => {
+export const Modal = ({ toggleModal, largeImage, tags }) => {
   useEffect(() => {
-
     const handleKeyDown = e => {
       if (e.code === 'Escape') {
-        onClose();
+        toggleModal();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown); 
+    window.addEventListener('keydown', handleKeyDown);
 
-
-
-return () => {
-      window.removeEventListener('keydown', handleKeyDown); 
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [toggleModal]);
 
   const handleOverlayClick = e => {
     if (e.currentTarget === e.target) {
-      onClose();
+      toggleModal();
     }
   };
 
-  return createPortal (
+  return createPortal(
     <div className={css.overlay} onClick={handleOverlayClick}>
       <div className={css.modal}>
-        <img className={css.modal__image} src={largeImageURL} alt="" />
+        <img className={css.modal__image} src={largeImage.src} alt={tags} />
       </div>
-    </div>, modalRoot
+    </div>,
+    modalRoot
   );
 };
 
 Modal.propTypes = {
-  onClose: propTypes.func.isRequired.isRequired,
-  largeImageURL: propTypes.string.isRequired,
+  toggleModal: propTypes.func.isRequired,
+  largeImage: propTypes.shape({
+    src: propTypes.string.isRequired,
+  }),
 };
-
-
-  

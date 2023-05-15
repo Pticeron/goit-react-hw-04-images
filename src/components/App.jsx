@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
-import { toast } from 'react-hot-toast';
-import { fetchImages } from '../services/fetchImages';
+import css from './App.module.css';
+import { ToastContainer, toast } from 'react-toastify';
+
+import { fetchImages } from '../services/api';
 
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
@@ -10,37 +11,39 @@ import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
 
 export const App = () => {
-  const [inputValue, setInputValue] = useState('');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [lastPage, setLastPage] = useState(0);
   const [error, setError] = useState(null);
-  const [modal, setModal] = useState({
-    showModal: false,
-    largeImageURL: '',
-  });
-  const [noResults, setNoResults] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalHits, setTotalHits] = useState(null);
 
-  const handleChange = event => {
-    setInputValue(event.target.value);
-  };
+  const [showModal, setShowModal] = useState(false);
+  const [largeImage, setLargeImage] = useState(null);
 
-  const onClickClear = () => {
-    setInputValue('');
-  };
+  useEffect(() => {
+    if (!search) return;
 
-  const handleSubmit = event => {
-    event.preventDefault();
+    const fetchImagesByQuery = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchImages(search, page);
+        data.hits.length === 0
+          ? toast.error('Nothing found')
+          : setImages(prevPictures => [...prevPictures, ...data.hits]);
+        setTotalHits(data.totalHits);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchImagesByQuery();
+  }, [search, page]);
 
-    if (inputValue.trim() === '') {
-      return toast.error('Enter text for search.');
-    }
-
-    if (query === inputValue) return;
+  const searchPictures = newSearch => {
+    setSearch(newSearch);
     setImages([]);
-    setQuery(inputValue);
     setPage(1);
   };
 
@@ -48,77 +51,29 @@ export const App = () => {
     setPage(prevState => prevState + 1);
   };
 
+  const openModal = data => {
+    setShowModal(true);
+    setLargeImage(data);
+  };
+
   const toggleModal = () => {
-    setModal(prevState => ({ ...prevState, showModal: !prevState.showModal }));
+    setShowModal(!showModal);
   };
-
-  const handleImageClick = largeImageURL => {
-    setModal(prevState => ({ ...prevState, largeImageURL }));
-    toggleModal();
-  };
-
-  useEffect(() => {
-    if (page === 0) return;
-
-    const fetchImagesByQuery = async searchQuery => {
-      setIsLoading(true);
-      setError(null);
-      setNoResults(false);
-
-      try {
-        const response = await fetchImages(searchQuery, page);
-        setImages(prevState => [...prevState, ...response.hits]);
-        setLastPage(Math.ceil(response.totalHits / 12));
-        response.totalHits === 0 && setNoResults(true);
-      } catch (error) {
-        setError(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchImagesByQuery(query);
-  }, [page, query]);
 
   return (
-    <div>
-      <Toaster
-        toastOptions={{
-          duration: 1500,
-        }}
-      />
-
-      <Searchbar
-        onSubmit={handleSubmit}
-        onChange={handleChange}
-        onClickClear={onClickClear}
-        inputValue={inputValue}
-      />
-
-      {error && (
-        <h2 style={{ textAlign: 'center' }}>
-          Something went wrong: ({error})!
-        </h2>
+    <div className={css.App}>
+      
+      <Searchbar onSubmit={searchPictures} />
+      {images.length !== 0 && (
+        <ImageGallery images={images} openModal={openModal} />
       )}
-
-      <ImageGallery images={images} onImageClick={handleImageClick} />
-
+      {showModal && <Modal toggleModal={toggleModal} largeImage={largeImage} />}
       {isLoading && <Loader />}
-      {noResults && (
-        <h2 style={{ textAlign: 'center' }}>
-          Sorry. There are no images ... 😭
-        </h2>
+      {error && <p>Something goes wrong</p>}
+      {totalHits > images.length && !isLoading && (
+        <Button onClick={handleLoadMore} />
       )}
-
-      {page < lastPage && !isLoading ? (
-        <Button label="Load more" handleLoadMore={handleLoadMore} />
-      ) : (
-        <div style={{ height: 40 }}></div>
-      )}
-
-      {modal.showModal && (
-        <Modal onClose={toggleModal} largeImageURL={modal.largeImageURL} />
-      )}
+      <ToastContainer autoClose={1500} />
     </div>
   );
 };
